@@ -1,0 +1,7 @@
+.DS_Store
+*.DS_Store
+docs/
+crm-app/.env
+crm-app/.env.local
+crm-app/node_modules/
+crm-app/dist/

@@ -1,0 +1,86 @@
+-- STEP 1: Migration
+ALTER TABLE crm_tickets
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS error_custom text;
+
+-- STEP 2: Seed data (chỉ dùng cột chắc chắn tồn tại)
+INSERT INTO crm_tickets
+  (id, ticket_code, account_id, created_at, category, classification,
+   customer_type, source, status, priority, description, resolution,
+   total_time, handling_time, is_unlinked, error_code, error_custom)
+VALUES
+-- T11/2025
+(gen_random_uuid(),'#0111250001',NULL,'2025-11-03 08:00:00','Ứng dụng PHS','Lỗi hệ thống','KH có tài khoản','Hotline','Đã đóng','Bình thường','ZNS không gửi được do chặn tường lửa','Team xử lý tường lửa',45,30,true,'PT004',NULL),
+(gen_random_uuid(),'#0411250001',NULL,'2025-11-04 11:00:00','Ứng dụng PHS','Lỗi đồng bộ','KH không có tài khoản','Zalo','Đã đóng','Bình thường','Tin nhắn Zalo không đồng bộ qua CRM','CS và vendor xử lý',30,20,true,'PT004',NULL),
+(gen_random_uuid(),'#0611250001',NULL,'2025-11-06 13:04:00','Ứng dụng PHS','Không hiển thị quyền mua','KH có tài khoản','Hotline','Đã đóng','Bình thường','Trên app không hiện quyền mua DIG','Teller đăng ký lại',20,15,false,'CK004',NULL),
+(gen_random_uuid(),'#1211250001',NULL,'2025-11-12 09:30:00','Ứng dụng PHS','Xác nhận lệnh lỗi','KH có tài khoản','Hotline','Đã đóng','Cao','Xác nhận lệnh đang lỗi nhiều tài khoản','IT kiểm tra và fix',60,45,true,'LĐ001',NULL),
+(gen_random_uuid(),'#1511250001',NULL,'2025-11-15 10:00:00','Hỗ trợ Giao dịch','SMS OTP','KH có tài khoản','Hotline','Đã đóng','Bình thường','KH không lấy được SMS OTP','IT kiểm tra nhà mạng',25,20,true,'ĐN002',NULL),
+(gen_random_uuid(),'#1811250001',NULL,'2025-11-18 14:00:00','Hỗ trợ Giao dịch','SMS OTP','KH có tài khoản','Hotline','Đã đóng','Bình thường','TK 012089 không nhận được mã OTP','IT xử lý',20,15,true,'ĐN002',NULL),
+(gen_random_uuid(),'#2011250001',NULL,'2025-11-20 08:30:00','Ứng dụng PHS','Hiển thị','KH có tài khoản','Hotline','Đã đóng','Bình thường','CS phản hồi KH không hiển thị tin nhắn','IT kiểm tra',35,25,true,'HT003',NULL),
+(gen_random_uuid(),'#2511250001',NULL,'2025-11-25 09:00:00','Ứng dụng PHS','Home lệnh','KH có tài khoản','Hotline','Đã đóng','Bình thường','Home xuất xác nhận lệnh không được','IT fix',40,30,true,'PT003',NULL),
+-- T12/2025
+(gen_random_uuid(),'#0312250001',NULL,'2025-12-03 09:00:00','Ứng dụng PHS','Bảng giá','KH có tài khoản','Email','Đã đóng','Bình thường','Bảng giá trên home chưa đúng','IT cập nhật',30,20,true,'HT001',NULL),
+(gen_random_uuid(),'#0512250001',NULL,'2025-12-05 10:15:00','Ứng dụng PHS','Xpro giá','KH có tài khoản','Hotline','Đã đóng','Bình thường','Bảng giá Xpro bị lỗi','IT xử lý',25,20,true,'HT001',NULL),
+(gen_random_uuid(),'#1012250001',NULL,'2025-12-10 11:00:00','Failed E-Kyc','eKYC ảnh','KH có tài khoản','Hotline','Đã đóng','Cao','eKYC load không được hình ảnh chứng từ','IT kiểm tra link',50,40,true,'KY002',NULL),
+(gen_random_uuid(),'#1212250001',NULL,'2025-12-12 14:00:00','Hỗ trợ Giao dịch','Lệnh điều kiện','KH có tài khoản','Hotline','Đã đóng','Khẩn cấp','Không hủy được lệnh điều kiện tất cả kênh','IT fix khẩn',120,90,true,'LĐ004',NULL),
+(gen_random_uuid(),'#1512250001',NULL,'2025-12-15 08:00:00','Ứng dụng PHS','TT không hiển thị','KH có tài khoản','Hotline','Đã đóng','Cao','Thông tin thị trường trên app/Xpro không hiển thị giá','Service restart',90,60,true,'HT004',NULL),
+(gen_random_uuid(),'#1812250001',NULL,'2025-12-18 10:30:00','Ứng dụng PHS','Web sai','KH có tài khoản','Hotline','Đã đóng','Bình thường','Web trading sai, bán khớp không trừ số lượng','IT sửa',45,35,true,'HT002',NULL),
+(gen_random_uuid(),'#2212250001',NULL,'2025-12-22 09:00:00','Hỗ trợ Giao dịch','Vượt SM','KH có tài khoản','Hotline','Đã đóng','Bình thường','Đặt mua GMX báo vượt SM','IT kiểm tra',25,20,true,'LĐ005',NULL),
+(gen_random_uuid(),'#2412250001',NULL,'2025-12-24 11:00:00','Ứng dụng PHS','Portal','KH không có tài khoản','Email','Đã đóng','Bình thường','BrokerPortal không vào được','IT restart',40,30,true,'PT001',NULL),
+-- T01/2026
+(gen_random_uuid(),'#0501260001',NULL,'2026-01-05 08:00:00','Ứng dụng PHS','Giá tham chiếu','KH có tài khoản','Hotline','Đã đóng','Cao','Giá TT vẫn là giá tham chiếu hôm qua','IT cập nhật service',60,45,true,'HT001',NULL),
+(gen_random_uuid(),'#0801260001',NULL,'2026-01-08 09:30:00','Ứng dụng PHS','Portal','KH không có tài khoản','Email','Đã đóng','Bình thường','BrokerPortal không vào được buổi sáng','IT kiểm tra',30,25,true,'PT001',NULL),
+(gen_random_uuid(),'#1001260001',NULL,'2026-01-10 10:00:00','Ứng dụng PHS','Đặt lệnh','KH có tài khoản','Hotline','Đã đóng','Khẩn cấp','Home 1-2h đặt lệnh mua bán không được','IT xóa cache',45,35,true,'LĐ001',NULL),
+(gen_random_uuid(),'#1401260001',NULL,'2026-01-14 11:00:00','Ứng dụng PHS','Link Portal','KH không có tài khoản','Email','Đã đóng','Bình thường','Link đánh HĐ không vào được','IT kiểm tra',20,15,true,'PT001',NULL),
+(gen_random_uuid(),'#1601260001',NULL,'2026-01-16 09:00:00','Hỗ trợ Giao dịch','T3 Margin','KH có tài khoản','Hotline','Đã đóng','Bình thường','Home phần T3 và margin sắp đến hạn bị lỗi','IT fix',35,25,true,'HT002',NULL),
+(gen_random_uuid(),'#2001260001',NULL,'2026-01-20 14:00:00','Ứng dụng PHS','Đăng nhập','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','KH không đăng nhập được app','IT hỗ trợ',20,15,true,'ĐN001',NULL),
+(gen_random_uuid(),'#2201260001',NULL,'2026-01-22 10:00:00','Hỗ trợ Giao dịch','Chuyển tiền','KH có tài khoản','Hotline','Đã đóng','Bình thường','Không đăng ký chuyển tiền khác chủ được trên portal','IT kiểm tra',40,30,true,'CK001',NULL),
+(gen_random_uuid(),'#2501260001',NULL,'2026-01-25 09:30:00','Ứng dụng PHS','Reset mật khẩu','KH có tài khoản','Hotline','Đã đóng','Bình thường','Reset mật khẩu báo lỗi nhiều lần','IT kiểm tra',30,25,true,'ĐN004',NULL),
+(gen_random_uuid(),'#2801260001',NULL,'2026-01-28 11:00:00','Ứng dụng PHS','Xuất báo cáo','KH không có tài khoản','Email','Đã đóng','Bình thường','Báo cáo trên home không xuất được','IT kiểm tra',25,20,true,'PT003',NULL),
+-- T02/2026
+(gen_random_uuid(),'#0302260001',NULL,'2026-02-03 09:00:00','Ứng dụng PHS','Giá TT','KH có tài khoản','Hotline','Đã đóng','Bình thường','Giá TT home không update','IT restart',20,15,true,'HT001',NULL),
+(gen_random_uuid(),'#0502260001',NULL,'2026-02-05 10:00:00','Ứng dụng PHS','Tài sản','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','Giá CP tăng nhưng không cập nhật giá trị tài sản','IT kiểm tra',30,25,true,'HT002',NULL),
+(gen_random_uuid(),'#1002260001',NULL,'2026-02-10 11:00:00','Failed E-Kyc','eKYC CCCD','KH có tài khoản','Hotline','Đã đóng','Cao','eKYC tới bước CCCD không cho tiếp tục','IT kiểm tra flow',60,45,true,'KY001',NULL),
+(gen_random_uuid(),'#1302260001',NULL,'2026-02-13 09:00:00','Hỗ trợ Giao dịch','Bước giá','KH có tài khoản','Hotline','Đã đóng','Bình thường','Đặt lệnh mua VNX báo bước giá không hợp lệ','IT và vendor kiểm tra',45,35,true,'LĐ002',NULL),
+(gen_random_uuid(),'#1502260001',NULL,'2026-02-15 10:30:00','Ứng dụng PHS','MG chuyển KH','KH có tài khoản','Hotline','Đã đóng','Bình thường','Nhập ID MG chuyển KH không ra thông tin','IT kiểm tra',25,20,true,'PT002',NULL),
+(gen_random_uuid(),'#1802260001',NULL,'2026-02-18 08:30:00','Hỗ trợ Giao dịch','Chữ ký','KH có tài khoản','Email','Đã đóng','Bình thường','Thay đổi chữ ký cho KH bị báo lỗi','Thêm chữ ký mới',30,20,true,'KY004',NULL),
+(gen_random_uuid(),'#2002260001',NULL,'2026-02-20 09:00:00','Ứng dụng PHS','Sao kê','KH không có tài khoản','Email','Đã đóng','Bình thường','2 yêu cầu sao kê trên portal không nhìn thấy','IT kiểm tra',35,25,true,'PT002',NULL),
+(gen_random_uuid(),'#2402260001',NULL,'2026-02-24 14:00:00','Ứng dụng PHS','Thanh toán CK','KH có tài khoản','Hotline','Đã đóng','Khẩn cấp','Tạm hoãn thanh toán CK phiên chiều','VSDC xử lý',180,120,true,'CK002',NULL),
+(gen_random_uuid(),'#2602260001',NULL,'2026-02-26 11:00:00','Ứng dụng PHS','Đăng nhập 5G','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','App không vào được khi dùng 5G Vinaphone','IT phối hợp nhà mạng',40,30,true,'ĐN001',NULL),
+-- T03/2026
+(gen_random_uuid(),'#0203260001',NULL,'2026-03-02 09:00:00','Ứng dụng PHS','Thông báo lệnh','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','Thông báo lệnh khớp chưa cập nhật ngày','IT kiểm tra push',30,25,true,'HT003',NULL),
+(gen_random_uuid(),'#0503260001',NULL,'2026-03-05 10:00:00','Hỗ trợ Giao dịch','Lệnh bị hủy','KH có tài khoản','Hotline','Đã đóng','Cao','Hệ thống tự hủy lệnh bán HaH cuối phiên','IT kiểm tra',60,45,true,'LĐ003',NULL),
+(gen_random_uuid(),'#0703260001',NULL,'2026-03-07 11:00:00','Failed E-Kyc','eKYC ảnh','KH có tài khoản','Hotline','Đã đóng','Bình thường','eKYC load không được hình ảnh (nhiều CN)','IT kiểm tra server',50,40,true,'KY002',NULL),
+(gen_random_uuid(),'#1003260001',NULL,'2026-03-10 08:30:00','Ứng dụng PHS','Sức mua','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','KH nộp tiền sức mua không cập nhật','IT kiểm tra',35,30,true,'HT002',NULL),
+(gen_random_uuid(),'#1203260001',NULL,'2026-03-12 10:00:00','Ứng dụng PHS','Tài sản app','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','Lỗi hiển thị tài sản trên app mobile','IT fix',25,20,true,'HT002',NULL),
+(gen_random_uuid(),'#1503260001',NULL,'2026-03-15 09:00:00','Ứng dụng PHS','Khối lượng lag','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','App lỗi hiển thị khối lượng, lag khi thêm lệnh','IT theo dõi',40,30,true,'LĐ006',NULL),
+(gen_random_uuid(),'#1703260001',NULL,'2026-03-17 09:59:00','Ứng dụng PHS','Đăng nhập','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','App không vào được (5G Vinaphone)','IT phối hợp',30,25,true,'ĐN001',NULL),
+(gen_random_uuid(),'#1803260001',NULL,'2026-03-18 09:56:00','Ứng dụng PHS','Sao kê','KH không có tài khoản','Email','Đã đóng','Bình thường','Yêu cầu sao kê trên portal CN không nhìn thấy','IT kiểm tra',35,25,true,'PT002',NULL),
+(gen_random_uuid(),'#2003260001',NULL,'2026-03-20 15:37:00','Hỗ trợ Giao dịch','Đặt lệnh Home','KH không có tài khoản','Hotline','Đã đóng','Bình thường','Home 1-2h đặt lệnh không được','IT xóa cache',45,35,true,'LĐ001',NULL),
+(gen_random_uuid(),'#2303260001',NULL,'2026-03-23 08:57:00','Ứng dụng PHS','Giá TT','KH có tài khoản','Hotline','Đã đóng','Cao','Thông tin TT mobile/Xpro không hiển thị giá','Service restart',90,70,true,'HT004',NULL),
+(gen_random_uuid(),'#2603260001',NULL,'2026-03-26 10:00:00','Ứng dụng PHS','CCCD','KH có tài khoản','Hotline','Đã đóng','Bình thường','Khách thay đổi CCCD hệ thống báo lỗi','IT kiểm tra',30,25,true,'KY003',NULL),
+(gen_random_uuid(),'#3003260001',NULL,'2026-03-30 13:14:00','Failed E-Kyc','eKYC','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','KH mở eKYC đầy đủ nhưng bấm tiếp tục báo lỗi','IT kiểm tra',40,35,true,'KY001',NULL),
+-- T04/2026
+(gen_random_uuid(),'#0204260001',NULL,'2026-04-02 09:00:00','Hỗ trợ Giao dịch','Giá lệch','KH có tài khoản','Hotline','Đã đóng','Bình thường','Giá TCB web trading và Home không khớp','IT kiểm tra',30,25,true,'HT004',NULL),
+(gen_random_uuid(),'#0604260001',NULL,'2026-04-06 08:07:00','Ứng dụng PHS','Portal T0','KH không có tài khoản','Email','Đã đóng','Bình thường','Link T0-limit BrokerPortal không hiện thông tin KH','IT đăng xuất lại',15,10,true,'PT002',NULL),
+(gen_random_uuid(),'#0704260001',NULL,'2026-04-07 15:30:00','Ứng dụng PHS','Portal xác nhận','KH không có tài khoản','Email','Đã đóng','Bình thường','Yêu cầu xác nhận NĐT chuyên nghiệp không thấy ở CN','IT fix portal',35,25,true,'PT002',NULL),
+(gen_random_uuid(),'#1004260001',NULL,'2026-04-10 11:43:00','Hỗ trợ Giao dịch','Chữ ký','KH có tài khoản','Hotline','Đã đóng','Bình thường','CN thay đổi chữ ký cho KH bị báo lỗi','Thêm chữ ký mới',20,15,true,'KY004',NULL),
+(gen_random_uuid(),'#1304260001',NULL,'2026-04-13 10:03:00','Hỗ trợ Giao dịch','Bước giá','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','TK 89981 đặt lệnh mua VNX báo bước giá không hợp lệ','IT và vendor',45,35,true,'LĐ002',NULL),
+(gen_random_uuid(),'#1604260001',NULL,'2026-04-16 10:25:00','Ứng dụng PHS','Không mua bán','KH có tài khoản','Mobile_app','Đã đóng','Cao','TK 42610 không mua không bán được','IT kiểm tra',50,40,false,'LĐ001',NULL),
+(gen_random_uuid(),'#1604260002',NULL,'2026-04-16 15:38:00','Failed E-Kyc','eKYC','KH có tài khoản','Mobile_app','Đang xử lý','Bình thường','KH mở eKYC không cho tiếp tục','IT đang kiểm tra',NULL,NULL,true,'KY001',NULL),
+(gen_random_uuid(),'#1704260001',NULL,'2026-04-17 15:31:00','Ứng dụng PHS','Khối lượng lag','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','App lỗi hiển thị khối lượng, lag khi thêm lệnh','IT theo dõi',60,NULL,false,'LĐ006',NULL),
+(gen_random_uuid(),'#2004260001',NULL,'2026-04-20 11:29:00','Ứng dụng PHS','Đăng nhập Android','KH có tài khoản','Mobile_app','Đã đóng','Cao','TK 17910 không đăng nhập được','Lỗi Android đã xử lý',30,25,false,'ĐN001',NULL),
+(gen_random_uuid(),'#2004260002',NULL,'2026-04-20 16:53:00','Ứng dụng PHS','Đăng nhập Android','KH có tài khoản','Mobile_app','Đã đóng','Cao','TK 101672 không đăng nhập, xóa cache vẫn không được','Lỗi Android đã xử lý',35,25,false,'ĐN001',NULL),
+(gen_random_uuid(),'#2204260001',NULL,'2026-04-22 13:40:00','Hỗ trợ Giao dịch','Home đặt lệnh','KH không có tài khoản','Hotline','Đã đóng','Khẩn cấp','Home không đặt lệnh được','IT xử lý gấp',45,35,true,'LĐ001',NULL),
+(gen_random_uuid(),'#2204260002',NULL,'2026-04-22 14:08:00','Ứng dụng PHS','Đăng nhập','KH có tài khoản','Mobile_app','Đã đóng','Bình thường','App không vào được','IT xử lý',15,10,true,'ĐN001',NULL),
+(gen_random_uuid(),'#2504260001',NULL,'2026-04-25 09:00:00','Dịch vụ CSKH','Phí sai','KH có tài khoản','Hotline','Đã đóng','Bình thường','KH thắc mắc phí chuyển khoản CK tính sai','CS giải thích',40,30,true,'KN001',NULL),
+(gen_random_uuid(),'#2604260001',NULL,'2026-04-26 10:00:00','Dịch vụ CSKH','Thái độ MG','KH có tài khoản','Hotline','Đã đóng','Cao','KH phàn nàn thái độ môi giới','GĐ CN xử lý',60,45,true,'KN003',NULL),
+(gen_random_uuid(),'#2804260001',NULL,'2026-04-28 14:00:00','Hỗ trợ Giao dịch','Chuyển CK','KH có tài khoản','Hotline','Đã đóng','Bình thường','Chuyển CK nội bộ thường sang Margin không được','IT kiểm tra',35,25,true,'CK001',NULL),
+(gen_random_uuid(),'#2904260001',NULL,'2026-04-29 11:18:00','Ứng dụng PHS','Web login','KH có tài khoản','Web Trading','Đang xử lý','Bình thường','KH login web bị đăng xuất liên tục','IT đang kiểm tra',NULL,NULL,true,'ĐN003',NULL),
+-- T05/2026
+(gen_random_uuid(),'#0205260001',NULL,'2026-05-02 09:00:00','Ứng dụng PHS','Đăng nhập','KH có tài khoản','Mobile_app','Đang xử lý','Bình thường','KH không đăng nhập được app buổi sáng','IT đang xử lý',NULL,NULL,true,'ĐN001',NULL),
+(gen_random_uuid(),'#0405260001',NULL,'2026-05-04 10:00:00','Hỗ trợ Giao dịch','Đặt lệnh','KH có tài khoản','Hotline','Đang xử lý','Cao','Nhiều KH không đặt lệnh được buổi chiều','IT đang kiểm tra',NULL,NULL,true,'LĐ001',NULL),
+(gen_random_uuid(),'#0505260001',NULL,'2026-05-05 09:30:00','Failed E-Kyc','eKYC CCCD','KH có tài khoản','Hotline','Chờ phản hồi','Bình thường','eKYC CCCD load chậm và báo lỗi','IT đang theo dõi',NULL,NULL,true,'KY002',NULL),
+(gen_random_uuid(),'#0605260001',NULL,'2026-05-06 08:30:00','Dịch vụ CSKH','Phí GD','KH có tài khoản','Hotline','Đang xử lý','Bình thường','KH thắc mắc phí GD tháng 4 tính cao hơn','CS đang xác nhận',NULL,NULL,true,'KN001',NULL),
+(gen_random_uuid(),'#0605260002',NULL,'2026-05-06 10:15:00','Hỗ trợ Giao dịch','OTP','KH có tài khoản','Hotline','Đang xử lý','Bình thường','KH không nhận được OTP xác nhận lệnh','IT kiểm tra nhà mạng',NULL,NULL,true,'ĐN002',NULL),
+(gen_random_uuid(),'#0605260003',NULL,'2026-05-06 14:00:00','Dịch vụ CSKH','Chậm xử lý','KH có tài khoản','Email','Chờ phản hồi','Cao','KH phản ánh phản hồi quá lâu, liên hệ nhiều lần','CS trưởng xử lý',NULL,NULL,true,'KN004',NULL);
