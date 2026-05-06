@@ -194,8 +194,8 @@ export default function ErrorReport() {
                 <XAxis type="number" tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={62} tick={{ fontSize: 11, fontFamily: 'monospace' }} />
                 <Tooltip
-                  formatter={(val: number, _name: string, props: any) => [
-                    `${val} tickets`,
+                  formatter={(val: number | undefined, _name: string, props: any) => [
+                    `${val ?? 0} tickets`,
                     props.payload.label,
                   ]}
                 />

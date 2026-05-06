@@ -431,7 +431,7 @@ function ChartCard({ data, title, section, chartType }: { data: Record<string, n
                 paddingAngle={2} label={renderCustomLabel} labelLine={false}>
                 {entries.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v} (${total > 0 ? Math.round((v / total) * 100) : 0}%)`, 'Số lượng']} />
+              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0} (${total > 0 ? Math.round(((v ?? 0) / total) * 100) : 0}%)`, 'Số lượng']} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           ) : chartType === 'hbar' ? (
@@ -439,7 +439,7 @@ function ChartCard({ data, title, section, chartType }: { data: Record<string, n
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11 }} />
               <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v: number) => [`${v} (${total > 0 ? Math.round((v / total) * 100) : 0}%)`, 'Số lượng']} />
+              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0} (${total > 0 ? Math.round(((v ?? 0) / total) * 100) : 0}%)`, 'Số lượng']} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {entries.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
@@ -449,7 +449,7 @@ function ChartCard({ data, title, section, chartType }: { data: Record<string, n
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={60} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => [`${v} (${total > 0 ? Math.round((v / total) * 100) : 0}%)`, 'Số lượng']} />
+              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0} (${total > 0 ? Math.round(((v ?? 0) / total) * 100) : 0}%)`, 'Số lượng']} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {entries.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
@@ -460,7 +460,7 @@ function ChartCard({ data, title, section, chartType }: { data: Record<string, n
               <PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} />
               <PolarRadiusAxis tick={{ fontSize: 9 }} />
               <Radar dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-              <Tooltip formatter={(v: number) => [`${v}`, 'Số lượng']} />
+              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0}`, 'Số lượng']} />
             </RadarChart>
           ) : chartType === 'treemap' ? (
             <Treemap data={entries} dataKey="value" nameKey="name" aspectRatio={4 / 3}
