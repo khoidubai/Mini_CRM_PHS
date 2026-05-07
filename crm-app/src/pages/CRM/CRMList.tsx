@@ -79,8 +79,8 @@ export default function CRMList() {
     await fetchAll()
   }
 
-  const linkedTickets = tickets.filter((t) => !t.is_unlinked)
-  const unlinkedTickets = tickets.filter((t) => t.is_unlinked)
+  const linkedTickets = tickets.filter((t) => !!t.account_id && !t.is_unlinked)
+  const unlinkedTickets = tickets.filter((t) => !t.account_id || !!t.is_unlinked)
   const currentList = activeTab === 'linked' ? linkedTickets : unlinkedTickets
 
   // Ẩn "Thay đổi bậc VIP" khỏi báo cáo issue mặc định
