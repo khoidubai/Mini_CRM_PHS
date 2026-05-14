@@ -42,11 +42,14 @@ const interestLevels: InterestLevel[] = [
   'Không quan tâm',
 ]
 
-const customerGroups: CustomerGroup[] = [
+const realGroups: CustomerGroup[] = [
   'A – Rất tiềm năng',
   'B – Tiềm năng',
   'C – Nuôi dưỡng',
   'D – Không tiềm năng',
+]
+
+const ghostGroups: CustomerGroup[] = [
   'E – Không nghe máy',
   'F – SĐT không hợp lệ',
   'G – Không có SĐT',
@@ -80,6 +83,7 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
     indirect_fee: record?.indirect_fee ?? '',
     notes: record?.notes || '',
     handover_rm: record?.handover_rm || '',
+    referral_introduced: record?.referral_introduced || false,
   })
 
   const [saving, setSaving] = useState(false)
@@ -87,6 +91,7 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const showInterestLevel = form.call_result === 'Nghe máy – trao đổi' || form.call_result === 'Trực tiếp'
+  const showReferral = showInterestLevel && (form.customer_group?.startsWith('A') || form.customer_group?.startsWith('B'))
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.account_id === form.account_id) || null,
@@ -128,6 +133,7 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
         indirect_fee: form.indirect_fee !== '' ? Number(form.indirect_fee) : null,
         notes: form.notes,
         handover_rm: form.handover_rm,
+        referral_introduced: form.referral_introduced,
         updated_at: new Date().toISOString(),
       }
 
@@ -149,6 +155,7 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
             indirect_fee: record.indirect_fee,
             notes: record.notes,
             handover_rm: record.handover_rm,
+            referral_introduced: record.referral_introduced,
           },
         }
         payload.record_history = [...history, snapshot]
@@ -298,7 +305,12 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nhóm KH</label>
                 <select value={form.customer_group} onChange={(e) => handleChange('customer_group', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                   <option value="">— Chọn —</option>
-                  {customerGroups.map((cg) => <option key={cg} value={cg}>{cg}</option>)}
+                  <optgroup label="Nhóm tiềm năng">
+                    {realGroups.map((cg) => <option key={cg} value={cg}>{cg}</option>)}
+                  </optgroup>
+                  <optgroup label="Nhóm Ảo">
+                    {ghostGroups.map((cg) => <option key={cg} value={cg}>{cg}</option>)}
+                  </optgroup>
                 </select>
               </div>
             </div>
@@ -368,6 +380,12 @@ export default function SAFormModal({ record, customers, onClose, onSaved }: Pro
                   <input type="checkbox" checked={form.info_support} onChange={(e) => handleChange('info_support', e.target.checked)} className="rounded border-gray-300" />
                   Hỗ trợ thông tin
                 </label>
+                {showReferral && (
+                  <label className="flex items-center gap-2 text-sm text-teal-700 font-medium">
+                    <input type="checkbox" checked={form.referral_introduced} onChange={(e) => handleChange('referral_introduced', e.target.checked)} className="rounded border-gray-300" />
+                    Đã giới thiệu Referral
+                  </label>
+                )}
               </div>
             </div>
 

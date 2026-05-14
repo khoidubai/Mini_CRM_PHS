@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { SARecord, Customer, CallResult } from '../../types'
 import { GroupBadge } from '../../components/Badge'
-import { Search, Filter, Plus, ChevronDown, ChevronUp, ArrowRightLeft, Upload } from 'lucide-react'
+import { Search, Filter, Plus, ChevronDown, ChevronUp, ArrowRightLeft, Upload, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import Pagination from '../../components/Pagination'
 import SAFormModal from './SAFormModal'
 import ImportModal from '../../components/ImportModal'
@@ -22,7 +23,7 @@ export default function SAList() {
   const [editRecord, setEditRecord] = useState<SARecordWithCustomer | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [showImport, setShowImport] = useState(false)
-
+  const [showGroupAB, setShowGroupAB] = useState(false)
   // Filters
   const [filterGroup, setFilterGroup] = useState<string>('')
   const [filterPIC, setFilterPIC] = useState('')
@@ -33,8 +34,8 @@ export default function SAList() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Sort
-  const [sortField, setSortField] = useState<string>('call_date')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [sortField, setSortField] = useState<string>('customer_group')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   // Pagination
   const [page, setPage] = useState(1)
@@ -48,6 +49,26 @@ export default function SAList() {
 
   async function fetchAll() {
     setLoading(true)
+
+    // Fetch branch colleagues for SA users
+    let cIds = new Set<string>()
+    let cPics = new Set<string>()
+    if (user?.role === 'sa' && user.profile?.branch) {
+      const { data: branchUsers } = await supabase
+        .from('user_profiles')
+        .select('id, pic_name')
+        .eq('branch', user.profile.branch)
+        .eq('role', 'sa')
+        .eq('is_active', true)
+      if (branchUsers) {
+        for (const u of branchUsers) {
+          if (u.id !== user.id) {
+            cIds.add(u.id)
+            if (u.pic_name) cPics.add(u.pic_name.toLowerCase())
+          }
+        }
+      }
+    }
     const [custRes, saRes] = await Promise.all([
       supabase.from('customers').select('*').order('account_id'),
       supabase.from('sa_records').select('*').order('call_date', { ascending: false }),
@@ -58,11 +79,15 @@ export default function SAList() {
 
     if (saRes.data) {
       let saData = saRes.data
-      // SA role: only see own records (by pic_user_id or pic_name match)
       if (user?.role === 'sa') {
+        // Show own records + colleagues in same branch
+        const ownId = user.id
+        const ownPic = user.pic_name?.toLowerCase()
         saData = saData.filter(r =>
-          r.pic_user_id === user.id ||
-          (user.pic_name && r.pic?.toLowerCase() === user.pic_name.toLowerCase())
+          r.pic_user_id === ownId ||
+          (ownPic && r.pic?.toLowerCase() === ownPic) ||
+          (r.pic_user_id && cIds.has(r.pic_user_id)) ||
+          (r.pic && cPics.has(r.pic.toLowerCase()))
         )
       }
       setRecords(saData.map(r => ({
@@ -73,6 +98,12 @@ export default function SAList() {
     setLoading(false)
   }
 
+  function isOwnRecord(r: SARecord): boolean {
+    if (!user) return true
+    return r.pic_user_id === user.id ||
+      !!(user.pic_name && r.pic?.toLowerCase() === user.pic_name.toLowerCase())
+  }
+
   async function fetchCustomers() {
     const { data } = await supabase.from('customers').select('*').order('account_id')
     if (data) setCustomers(data)
@@ -80,6 +111,44 @@ export default function SAList() {
 
   async function fetchRecords() {
     await fetchAll()
+  }
+
+  function exportTemplate() {
+    const headers = [
+      'Số TK lưu ký', 'Tên KH', 'Tên CN', 'Trạng thái', 'Phân loại VIP',
+      'PIC', 'Ngày gọi', 'Lần follow',
+      'Kết quả cuộc gọi', 'Mức độ quan tâm', 'Nhóm KH',
+      'Giới thiệu sản phẩm', 'Tái kích hoạt TK', 'Hỗ trợ thông tin',
+      'Tổng giá trị giao dịch', 'Phí giao dịch',
+      'TL ghi chú', 'Bàn giao MG chăm sóc',
+    ]
+    const sample = [
+      '022C1234', 'Nguyễn Văn A', 'Hà Nội', 'Active', 'Bình thường',
+      'Trần Thị B', '15/04/2025', 1,
+      'Nghe máy – trao đổi', 'Quan tâm – cần follow thêm', 'B – Tiềm năng',
+      'Có', 'Không', 'Có',
+      5000000, 250000,
+      'KH quan tâm sản phẩm, hẹn gọi lại', '',
+    ]
+    const guide = [
+      ['Cột', 'Giá trị hợp lệ'],
+      ['Kết quả cuộc gọi', 'Nghe máy – trao đổi | Không nghe máy / không bắt máy | Thuê bao / số không tồn tại | Không có thông tin liên hệ | Trực tiếp'],
+      ['Nhóm KH', 'A – Rất tiềm năng | B – Tiềm năng | C – Nuôi dưỡng | D – Không tiềm năng | E – Không nghe máy | F – SĐT không hợp lệ | G – Không có SĐT | H – Tài khoản ảo'],
+      ['Mức độ quan tâm', 'Rất quan tâm – muốn giao dịch ngay | Quan tâm – cần follow thêm | Nghe nhưng chưa có nhu cầu | Không quan tâm'],
+      ['Phân loại VIP', 'Bình thường | VIP Gold | VIP Platinum | VIP Diamond'],
+      ['Giới thiệu sản phẩm / Tái kích hoạt / Hỗ trợ TT', 'Có (hoặc Có, TRUE, 1) / Không (hoặc Không, FALSE, 0)'],
+      ['Ngày gọi', 'DD/MM/YYYY hoặc YYYY-MM-DD'],
+      ['Trạng thái', 'Active / Inactive / … (tuỳ hệ thống)'],
+    ]
+
+    const wb = XLSX.utils.book_new()
+    const wsData = XLSX.utils.aoa_to_sheet([headers, sample])
+    wsData['!cols'] = headers.map(() => ({ wch: 22 }))
+    XLSX.utils.book_append_sheet(wb, wsData, 'SA Records')
+    const wsGuide = XLSX.utils.aoa_to_sheet(guide)
+    wsGuide['!cols'] = [{ wch: 30 }, { wch: 100 }]
+    XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng dẫn')
+    XLSX.writeFile(wb, 'mau_import_SA.xlsx')
   }
 
   function toggleSort(field: string) {
@@ -98,7 +167,22 @@ export default function SAList() {
 
   const filtered = records
     .filter((r) => {
-      if (filterGroup && !r.customer_group?.startsWith(filterGroup)) return false
+      if (filterGroup) {
+        const cg = r.customer_group || ''
+        // Map từng nhóm Ảo sang cả giá trị gốc (E/F/G/H) lẫn giá trị sau migration (Ảo –)
+        const ghostPrefixes: Record<string, string[]> = {
+          'E': ['E –', 'Ảo – Không nghe'],
+          'F': ['F –', 'Ảo – Thuê bao'],
+          'G': ['G –', 'Ảo – Không có th'],
+          'H': ['H –', 'Ảo – Tài khoản'],
+        }
+        const prefixes = ghostPrefixes[filterGroup]
+        if (prefixes) {
+          if (!prefixes.some(p => cg.startsWith(p))) return false
+        } else {
+          if (!cg.startsWith(filterGroup)) return false
+        }
+      }
       if (filterPIC && !r.pic?.toLowerCase().includes(filterPIC.toLowerCase())) return false
       if (filterBranch && !r.customers?.branch?.toLowerCase().includes(filterBranch.toLowerCase())) return false
       if (filterCallResult && r.call_result !== filterCallResult) return false
@@ -135,7 +219,8 @@ export default function SAList() {
     'Trực tiếp',
   ]
 
-  const groupLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+  const realLetters = ['A', 'B', 'C', 'D']
+  const ghostLetters = ['E', 'F', 'G', 'H']
 
   return (
     <div>
@@ -152,6 +237,13 @@ export default function SAList() {
           {filtered.length !== records.length && <p className="text-xs text-blue-500">Đang lọc từ {records.length} bản ghi</p>}
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={exportTemplate}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+          >
+            <Download size={18} />
+            Tải mẫu
+          </button>
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors"
@@ -171,18 +263,26 @@ export default function SAList() {
 
       {/* Highlight KH nhóm A/B */}
       {groupAB.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-          <h3 className="text-sm font-semibold text-red-800 mb-2">
-            ⚡ Ưu tiên follow — Nhóm A/B ({groupAB.length} KH)
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {groupAB.map((r) => (
-              <span key={r.id} className="inline-flex items-center gap-1 bg-white border border-red-200 rounded-lg px-3 py-1 text-sm">
-                <span className="font-medium">{r.account_id}</span>
-                <GroupBadge group={r.customer_group} />
-              </span>
-            ))}
-          </div>
+        <div className="mb-4">
+          <button
+            onClick={() => setShowGroupAB(v => !v)}
+            className="flex items-center gap-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2 hover:bg-red-100 transition-colors w-full"
+          >
+            <span>⚡ Ưu tiên follow — Nhóm A/B ({groupAB.length} KH)</span>
+            <span className="ml-auto text-red-400">{showGroupAB ? '▲ Ẩn' : '▼ Xem'}</span>
+          </button>
+          {showGroupAB && (
+            <div className="bg-red-50 border border-t-0 border-red-200 rounded-b-xl px-4 pb-4 pt-3">
+              <div className="flex flex-wrap gap-2">
+                {groupAB.map((r) => (
+                  <span key={r.id} className="inline-flex items-center gap-1 bg-white border border-red-200 rounded-lg px-3 py-1 text-sm">
+                    <span className="font-medium">{r.account_id}</span>
+                    <GroupBadge group={r.customer_group} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -220,9 +320,16 @@ export default function SAList() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
               >
                 <option value="">Tất cả</option>
-                {groupLetters.map((g) => (
-                  <option key={g} value={g}>Nhóm {g}</option>
-                ))}
+                <optgroup label="Nhóm tiềm năng">
+                  {realLetters.map((g) => (
+                    <option key={g} value={g}>Nhóm {g}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Nhóm Ảo">
+                  {ghostLetters.map((g) => (
+                    <option key={g} value={g}>Nhóm {g}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
             <div>
@@ -284,7 +391,19 @@ export default function SAList() {
           <div className="p-12 text-center text-gray-400">Đang tải...</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-28" />     {/* Số TK */}
+                <col className="w-36" />     {/* Tên KH */}
+                <col className="w-32" />     {/* Chi nhánh */}
+                <col className="w-32" />     {/* Nhóm */}
+                <col className="w-24" />     {/* Ngày gọi */}
+                <col className="w-20" />     {/* PIC */}
+                <col className="w-28" />     {/* Kết quả */}
+                <col className="w-44" />     {/* Mức quan tâm */}
+                <col className="w-28" />     {/* Bàn giao RM */}
+                <col className="w-16" />     {/* Thao tác */}
+              </colgroup>
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer" onClick={() => toggleSort('account_id')}>
@@ -308,9 +427,8 @@ export default function SAList() {
                   <tr
                     key={r.id}
                     className={`hover:bg-gray-50 transition-colors ${
-                      (r.customer_group?.startsWith('A') || r.customer_group?.startsWith('B'))
-                        ? 'bg-red-50/50'
-                        : ''
+                      (r.customer_group?.startsWith('A') || r.customer_group?.startsWith('B')) ? 'bg-red-50/50' :
+                      (user?.role === 'sa' && !isOwnRecord(r)) ? 'bg-blue-50/40' : ''
                     }`}
                   >
                     <td className="px-4 py-3 font-mono font-medium text-blue-700">{r.account_id}</td>
@@ -318,7 +436,12 @@ export default function SAList() {
                     <td className="px-4 py-3 text-gray-500">{r.customers?.branch || '—'}</td>
                     <td className="px-4 py-3"><GroupBadge group={r.customer_group} /></td>
                     <td className="px-4 py-3 text-gray-600">{r.call_date ? format(new Date(r.call_date), 'dd/MM/yyyy') : '—'}</td>
-                    <td className="px-4 py-3 text-gray-600">{r.pic || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      <span>{r.pic || '—'}</span>
+                      {user?.role === 'sa' && !isOwnRecord(r) && (
+                        <span className="ml-1.5 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">CN</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{r.call_result || '—'}</td>
                     <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{r.interest_level || '—'}</td>
                     <td className="px-4 py-3">

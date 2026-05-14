@@ -4,10 +4,15 @@ import type { UserProfile, UserRole } from '../../lib/supabase'
 import { Plus, Pencil, X, Check, Shield, ShieldOff, Search, UserPlus } from 'lucide-react'
 
 const ROLES: { value: UserRole; label: string; color: string }[] = [
-  { value: 'sa', label: 'SA', color: 'bg-green-100 text-green-700' },
-  { value: 'ccc', label: 'CCC', color: 'bg-purple-100 text-purple-700' },
+  { value: 'sa',    label: 'SA',    color: 'bg-green-100 text-green-700' },
+  { value: 'sup',   label: 'SUP',   color: 'bg-orange-100 text-orange-700' },
+  { value: 'ccc',   label: 'CCC',   color: 'bg-purple-100 text-purple-700' },
   { value: 'admin', label: 'Admin', color: 'bg-red-100 text-red-700' },
 ]
+
+function autoKpiType(role: UserRole): 'sa' | 'sup' {
+  return role === 'sup' ? 'sup' : 'sa'
+}
 
 export default function UserManagement() {
   const [profiles, setProfiles] = useState<UserProfile[]>([])
@@ -75,6 +80,7 @@ export default function UserManagement() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
           <option value="all">Tất cả role</option>
           <option value="sa">SA</option>
+          <option value="sup">SUP</option>
           <option value="ccc">CCC</option>
           <option value="admin">Admin</option>
         </select>
@@ -120,9 +126,14 @@ export default function UserManagement() {
                     <td className="px-4 py-3 text-gray-600">{p.department || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{p.phone || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${ROLES.find(r => r.value === p.role)?.color || 'bg-gray-100 text-gray-600'}`}>
-                        {p.role}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase w-fit ${ROLES.find(r => r.value === p.role)?.color || 'bg-gray-100 text-gray-600'}`}>
+                          {p.role}
+                        </span>
+                        {(p.role === 'sa' || p.role === 'sup') && p.kpi_type && (
+                          <span className="text-[9px] text-violet-500 font-medium">KPI: {p.kpi_type.toUpperCase()}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       {p.is_active ? (
@@ -206,8 +217,9 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           employee_code: form.employee_code || null,
           phone: form.phone || null,
           department: form.department || null,
-          branch: form.role === 'sa' ? (form.branch || null) : null,
+          branch: (form.role === 'sa' || form.role === 'sup') ? (form.branch || null) : null,
           role: form.role,
+          kpi_type: (form.role === 'sa' || form.role === 'sup') ? autoKpiType(form.role) : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', signUpData.user.id)
@@ -273,7 +285,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             </div>
           </div>
 
-          {form.role === 'sa' && (
+          {(form.role === 'sa' || form.role === 'sup') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Chi nhánh</label>
               <input value={form.branch} onChange={e => handleChange('branch', e.target.value)}
@@ -283,6 +295,11 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           {(form.role === 'ccc' || form.role === 'admin') && (
             <div className="text-sm text-purple-700 bg-purple-50 rounded-lg px-3 py-2">
               {form.role === 'ccc' ? '📍 CCC → Hội sở (mặc định)' : '📍 Admin → Hội sở'}
+            </div>
+          )}
+          {form.role === 'sup' && (
+            <div className="text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
+              📊 SUP → KPI khung Supervisor (Phần A: 24%+15%+11%+10%)
             </div>
           )}
 
@@ -352,8 +369,9 @@ function EditUserModal({ profile, onClose, onSaved }: { profile: UserProfile; on
           employee_code: form.employee_code || null,
           phone: form.phone || null,
           department: form.department || null,
-          branch: form.role === 'sa' ? (form.branch || null) : null,
+          branch: (form.role === 'sa' || form.role === 'sup') ? (form.branch || null) : null,
           is_active: form.is_active,
+          kpi_type: (form.role === 'sa' || form.role === 'sup') ? autoKpiType(form.role) : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', profile.id)
@@ -419,7 +437,7 @@ function EditUserModal({ profile, onClose, onSaved }: { profile: UserProfile; on
             </div>
           </div>
 
-          {form.role === 'sa' && (
+          {(form.role === 'sa' || form.role === 'sup') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Chi nhánh</label>
               <input value={form.branch} onChange={e => handleChange('branch', e.target.value)}
@@ -429,6 +447,11 @@ function EditUserModal({ profile, onClose, onSaved }: { profile: UserProfile; on
           {(form.role === 'ccc' || form.role === 'admin') && (
             <div className="text-sm text-purple-700 bg-purple-50 rounded-lg px-3 py-2">
               {form.role === 'ccc' ? '📍 CCC → Hội sở (mặc định)' : '📍 Admin → Hội sở'}
+            </div>
+          )}
+          {form.role === 'sup' && (
+            <div className="text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
+              📊 SUP → KPI khung Supervisor (Phần A: 24%+15%+11%+10%)
             </div>
           )}
 

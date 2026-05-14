@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export type UserRole = 'sa' | 'ccc' | 'admin'
+export type UserRole = 'sa' | 'ccc' | 'admin' | 'sup'
 
 export interface UserProfile {
   id: string
@@ -18,6 +18,7 @@ export interface UserProfile {
   pic_name: string | null
   branch: string | null
   is_active: boolean
+  kpi_type: 'sa' | 'sup' | null
   created_at: string
   updated_at: string
 }

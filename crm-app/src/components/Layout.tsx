@@ -15,7 +15,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full">
+      <aside className="w-52 lg:w-60 xl:w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-20">
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-xl font-bold text-blue-700">PHS Mini CRM</h1>
           {user?.full_name && <p className="text-sm font-medium text-gray-800 mt-1">{user.full_name}</p>}
@@ -51,7 +51,7 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-64 p-6">
+      <main className="flex-1 ml-52 lg:ml-60 xl:ml-64 p-4 lg:p-6 min-w-0">
         <Outlet />
       </main>
     </div>

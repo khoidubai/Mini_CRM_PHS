@@ -119,11 +119,17 @@ CREATE TABLE IF NOT EXISTS kpi_targets (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       uuid REFERENCES user_profiles(id) ON DELETE CASCADE,
   metric        text NOT NULL CHECK (metric IN (
-    'reactivation', 'contact_success_rate', 'call_count',
-    'interest_rate', 'product_intro_rate', 'group_ab_count',
-    'handover_rm_count', 'transaction_value', 'transaction_fee'
+    'a1_sop', 'a1_nvqltk', 'a1_nvkd', 'a1_admin', 'a1_other',
+    'a2_project', 'a2_improve',
+    'a3_compliance', 'a3_teamwork',
+    'a4_knowledge', 'a4_share',
+    'call_count', 'contact_success_rate',
+    'icp_grouping_rate', 'icp_data_quality',
+    'reactivation_count', 'ltv_fee', 'referral_rate',
+    'support_count', 'new_product_count', 'group_conversion_rate'
   )),
   target_value  numeric NOT NULL DEFAULT 0,
+  actual_override numeric DEFAULT NULL,
   month         text NOT NULL,  -- format: 'YYYY-MM'
   created_at    timestamptz DEFAULT now(),
   updated_at    timestamptz DEFAULT now(),

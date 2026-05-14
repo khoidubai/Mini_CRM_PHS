@@ -43,6 +43,7 @@ export interface SARecord {
   product_introduced: boolean
   reactivation: boolean
   info_support: boolean
+  referral_introduced: boolean
   total_transaction_value: number | null
   transaction_fee: number | null
   notes: string
@@ -95,15 +96,46 @@ export interface ICPFeatures {
   preferred_channel: string | null
 }
 
-export type KPIMetric = 'reactivation' | 'contact_success_rate' | 'call_count'
-  | 'interest_rate' | 'group_ab_count'
-  | 'handover_rm_count' | 'transaction_value' | 'transaction_fee'
+export type KPIMetric =
+  // === PART A SUP (60%) — Supervisor trở lên ===
+  | 'a1_sop'              // A1 SUP — 5%
+  | 'a1_nvqltk'           // A1 SUP — 5%
+  | 'a1_nvkd'             // A1 SUP — 5%
+  | 'a1_admin'            // A1 SUP — 4%
+  | 'a1_other'            // A1 shared — 5%
+  | 'a2_project'          // A2 shared — 9%(SUP)/6%(SA)
+  | 'a2_improve'          // A2 SUP — 6%
+  | 'a3_compliance'       // A3 shared — 4%(SUP)/3%(SA)
+  | 'a3_teamwork'         // A3 SUP — 7%
+  | 'a4_knowledge'        // A4 shared — 5%(SUP)/3%(SA)
+  | 'a4_share'            // A4 shared — 5%(SUP)/3%(SA)
+  // === PART A SA (60%) — Sales Admin only ===
+  | 'a1_mo_tk'            // A1 SA — 7%
+  | 'a1_lenh_gd'          // A1 SA — 5%
+  | 'a1_luu_ky'           // A1 SA — 7%
+  | 'a1_gd_tien'          // A1 SA — 5%
+  | 'a1_ky_quy'           // A1 SA — 7%
+  | 'a2_test'             // A2 SA — 4%
+  | 'a3_event'            // A3 SA — 2%
+  | 'a4_cert'             // A4 SA — 3%
+  // === PART B (40%) — CRM-computed ===
+  | 'call_count'           // B1 #17 — 8%
+  | 'contact_success_rate' // B1 #18 — 4%
+  | 'icp_grouping_rate'    // B2 #20 — 4%
+  | 'icp_data_quality'     // B2 #21 — 4% (admin override)
+  | 'reactivation_count'   // B3 #23 — 6%
+  | 'ltv_fee'              // B3 #24 — 4%
+  | 'referral_rate'        // B3 #25 — 2%
+  | 'support_count'        // B4 #26 — 3%
+  | 'new_product_count'    // B4 #27 — 2%
+  | 'group_conversion_rate'// B4 #28 — 3%
 
 export interface KPITarget {
   id: string
   user_id: string
   metric: KPIMetric
   target_value: number
+  actual_override: number | null
   month: string
   created_at: string
   updated_at: string
