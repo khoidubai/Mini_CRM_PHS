@@ -12,7 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
 
   if (user) {
-    const redirectMap = { sa: '/sa', ccc: '/crm', admin: '/sa' }
+    const redirectMap = { sa: '/sa', sup: '/sa', ccc: '/crm', admin: '/sa' }
     navigate(redirectMap[user.role] || '/sa', { replace: true })
     return null
   }

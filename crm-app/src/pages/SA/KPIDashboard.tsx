@@ -19,6 +19,15 @@ const METRIC_META: Record<KPIMetric, MetricMeta> = {
   a3_teamwork:           { label: 'Xây dựng đội nhóm',        icon: UsersRound,    unit: '%',   color: 'rose',   weight: 7,  desc: '≥90% tich cực, team ≥90% KPI' },
   a4_knowledge:          { label: 'Kiểm tra kiến thức',      icon: BookOpen,      unit: '%',   color: 'amber',  weight: 5,  desc: '≥80% thi, 100% CC' },
   a4_share:              { label: 'Lan truyền kiến thức',    icon: Share2,        unit: '%',   color: 'amber',  weight: 5,  desc: '≥85% quiz, ≥2 buổi/năm' },
+  // Part A SA — admin-entered
+  a1_mo_tk:              { label: 'Mở Tài Khoản',             icon: ClipboardList, unit: '%',   color: 'slate',  weight: 7,  desc: '100% hoàn thành' },
+  a1_lenh_gd:            { label: 'Lệnh Giao Dịch',           icon: ClipboardList, unit: '%',   color: 'slate',  weight: 5,  desc: '100% hoàn thành' },
+  a1_luu_ky:             { label: 'Lưu Ký CK',                icon: ClipboardList, unit: '%',   color: 'slate',  weight: 7,  desc: '100% hoàn thành' },
+  a1_gd_tien:            { label: 'GD Tiền',                  icon: ClipboardList, unit: '%',   color: 'slate',  weight: 5,  desc: '100% hoàn thành' },
+  a1_ky_quy:             { label: 'Ký Quỹ',                   icon: ClipboardList, unit: '%',   color: 'slate',  weight: 7,  desc: '100% hoàn thành' },
+  a2_test:               { label: 'Test Công Cụ',              icon: Lightbulb,     unit: '%',   color: 'violet', weight: 4,  desc: '100% hoàn thành' },
+  a3_event:              { label: 'Tham Gia Sự Kiện',          icon: ShieldCheck,   unit: '%',   color: 'rose',   weight: 2,  desc: '100% hoàn thành' },
+  a4_cert:               { label: 'Chứng Chỉ & Đào Tạo',      icon: BookOpen,      unit: '%',   color: 'amber',  weight: 3,  desc: '100% hoàn thành' },
   // Part B — CRM-computed
   call_count:            { label: 'Số KH được gọi',        icon: Phone,         unit: 'KH',  color: 'indigo', weight: 8,  desc: '≥100 KH/tháng' },
   contact_success_rate:  { label: 'Tỷ lệ liên lạc',        icon: Phone,         unit: '%',   color: 'green',  weight: 4,  desc: '≥30%' },
@@ -32,11 +41,22 @@ const METRIC_META: Record<KPIMetric, MetricMeta> = {
   group_conversion_rate: { label: 'Chuyển đổi nhóm KH',     icon: TrendingUp,    unit: '%',   color: 'red',    weight: 3,  desc: '≥5%/quý' },
 }
 
-const GROUPS = [
+const SUP_GROUPS = [
   { id: 'A1', label: 'A1 — Vận hành & Quản lý Đội nhóm', weight: 24, part: 'A', metrics: ['a1_sop','a1_nvqltk','a1_nvkd','a1_admin','a1_other'] as KPIMetric[] },
   { id: 'A2', label: 'A2 — Dự án & Cải tiến', weight: 15, part: 'A', metrics: ['a2_project','a2_improve'] as KPIMetric[] },
   { id: 'A3', label: 'A3 — Tuân thủ & Lãnh đạo', weight: 11, part: 'A', metrics: ['a3_compliance','a3_teamwork'] as KPIMetric[] },
   { id: 'A4', label: 'A4 — Kiến thức & Học hỏi', weight: 10, part: 'A', metrics: ['a4_knowledge','a4_share'] as KPIMetric[] },
+  { id: 'B1', label: 'B1 — Gọi điện & Tiếp cận KH Inactive', weight: 12, part: 'B', metrics: ['call_count', 'contact_success_rate'] as KPIMetric[] },
+  { id: 'B2', label: 'B2 — ICP Phân nhóm KH', weight: 8, part: 'B', metrics: ['icp_grouping_rate', 'icp_data_quality'] as KPIMetric[] },
+  { id: 'B3', label: 'B3 — AAR Tái kích hoạt Giao dịch', weight: 12, part: 'B', metrics: ['reactivation_count', 'ltv_fee', 'referral_rate'] as KPIMetric[] },
+  { id: 'B4', label: 'B4 — Hỗ trợ CSKH & Giới thiệu SP', weight: 8, part: 'B', metrics: ['support_count', 'new_product_count', 'group_conversion_rate'] as KPIMetric[] },
+]
+
+const SA_GROUPS = [
+  { id: 'A1', label: 'A1 — Nghiệp vụ Tài khoản', weight: 36, part: 'A', metrics: ['a1_mo_tk','a1_lenh_gd','a1_luu_ky','a1_gd_tien','a1_ky_quy','a1_other'] as KPIMetric[] },
+  { id: 'A2', label: 'A2 — Dự án & Cải tiến', weight: 10, part: 'A', metrics: ['a2_project','a2_test'] as KPIMetric[] },
+  { id: 'A3', label: 'A3 — Tuân thủ & Sự kiện', weight: 5, part: 'A', metrics: ['a3_compliance','a3_event'] as KPIMetric[] },
+  { id: 'A4', label: 'A4 — Kiến thức & Đào tạo', weight: 9, part: 'A', metrics: ['a4_knowledge','a4_cert','a4_share'] as KPIMetric[] },
   { id: 'B1', label: 'B1 — Gọi điện & Tiếp cận KH Inactive', weight: 12, part: 'B', metrics: ['call_count', 'contact_success_rate'] as KPIMetric[] },
   { id: 'B2', label: 'B2 — ICP Phân nhóm KH', weight: 8, part: 'B', metrics: ['icp_grouping_rate', 'icp_data_quality'] as KPIMetric[] },
   { id: 'B3', label: 'B3 — AAR Tái kích hoạt Giao dịch', weight: 12, part: 'B', metrics: ['reactivation_count', 'ltv_fee', 'referral_rate'] as KPIMetric[] },
@@ -105,6 +125,15 @@ function computeActual(records: SARecord[], targets: KPITarget[]): Record<KPIMet
     a3_teamwork:           adminActual('a3_teamwork'),
     a4_knowledge:          adminActual('a4_knowledge'),
     a4_share:              adminActual('a4_share'),
+    // Part A SA — admin-entered
+    a1_mo_tk:              adminActual('a1_mo_tk'),
+    a1_lenh_gd:            adminActual('a1_lenh_gd'),
+    a1_luu_ky:             adminActual('a1_luu_ky'),
+    a1_gd_tien:            adminActual('a1_gd_tien'),
+    a1_ky_quy:             adminActual('a1_ky_quy'),
+    a2_test:               adminActual('a2_test'),
+    a3_event:              adminActual('a3_event'),
+    a4_cert:               adminActual('a4_cert'),
     // Part B — CRM-computed
     call_count: total,
     contact_success_rate: total > 0 ? Math.round((contactSuccess / total) * 100) : 0,
@@ -163,6 +192,7 @@ export default function KPIDashboard() {
   }
 
   const [kpiTab, setKpiTab] = useState<'A' | 'B'>('B')
+  const groups = user?.profile?.kpi_type === 'sa' ? SA_GROUPS : SUP_GROUPS
   const actual = useMemo(() => computeActual(records, targets), [records, targets])
   const score = useMemo(() => weightedScore(actual, targets), [actual, targets])
 
@@ -172,7 +202,7 @@ export default function KPIDashboard() {
 
   function partScore(part: 'A' | 'B') {
     let ws = 0, tw = 0
-    for (const g of GROUPS.filter(g => g.part === part)) {
+    for (const g of groups.filter(g => g.part === part)) {
       for (const m of g.metrics) {
         const t = getTarget(m)
         if (t && t.target_value > 0) {
@@ -265,7 +295,7 @@ export default function KPIDashboard() {
               <p className={`text-4xl font-bold mt-2 ${pctColor(sA)}`}>{sA !== null ? sA + '%' : '—'}</p>
               <div className="mt-2 space-y-1">
                 {['A1','A2','A3','A4'].map(gid => {
-                  const g = GROUPS.find(g => g.id === gid)!
+                  const g = groups.find(g => g.id === gid)!
                   let gWs = 0, gTw = 0
                   for (const m of g.metrics) { const t = getTarget(m); if (t && t.target_value > 0) { gWs += Math.min(actual[m]/t.target_value,1)*METRIC_META[m].weight; gTw += METRIC_META[m].weight } }
                   const gs = gTw > 0 ? Math.round((gWs/gTw)*100) : null
@@ -290,7 +320,7 @@ export default function KPIDashboard() {
               <p className={`text-4xl font-bold mt-2 ${pctColor(sB)}`}>{sB !== null ? sB + '%' : '—'}</p>
               <div className="mt-2 space-y-1">
                 {['B1','B2','B3','B4'].map(gid => {
-                  const g = GROUPS.find(g => g.id === gid)!
+                  const g = groups.find(g => g.id === gid)!
                   let gWs = 0, gTw = 0
                   for (const m of g.metrics) { const t = getTarget(m); if (t && t.target_value > 0) { gWs += Math.min(actual[m]/t.target_value,1)*METRIC_META[m].weight; gTw += METRIC_META[m].weight } }
                   const gs = gTw > 0 ? Math.round((gWs/gTw)*100) : null
@@ -324,7 +354,7 @@ export default function KPIDashboard() {
           {kpiTab === 'B' ? (
             /* Part B: grouped metric cards */
             <div className="space-y-4">
-              {GROUPS.filter(g => g.part === 'B').map(g => (
+              {groups.filter(g => g.part === 'B').map(g => (
                 <div key={g.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
                     <div className="flex items-center gap-2">
@@ -382,7 +412,7 @@ export default function KPIDashboard() {
               <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                 <p className="text-xs text-gray-500">Các chỉ tiêu Phần A do Admin nhập điểm thực tế. Bạn có thể xem tiến độ tại đây.</p>
               </div>
-              {GROUPS.filter(g => g.part === 'A').map(g => (
+              {groups.filter(g => g.part === 'A').map(g => (
                 <div key={g.id}>
                   <div className="flex items-center gap-2 px-4 py-2 bg-violet-50 border-b border-violet-100">
                     <span className="text-xs font-bold text-violet-700">{g.id}</span>
