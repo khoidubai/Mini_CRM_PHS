@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Users, Headphones, UserCircle, LayoutDashboard, Settings, UsersRound, Target, BarChart3, AlertTriangle } from 'lucide-react'
+import { LogOut, Users, Headphones, UserCircle, LayoutDashboard, Settings, UsersRound, Target, BarChart3, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
   const location = useLocation()
+  const [collapsed, setCollapsed] = useState(false)
 
   const navItems = getNavItems(user?.role || 'sa')
 
@@ -15,43 +17,65 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-52 lg:w-60 xl:w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-20">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-blue-700">PHS Mini CRM</h1>
-          {user?.full_name && <p className="text-sm font-medium text-gray-800 mt-1">{user.full_name}</p>}
-          <p className="text-xs text-gray-500 mt-0.5">
-            {user?.email} — <span className="uppercase font-semibold text-blue-600">{user?.role}</span>
-          </p>
+      <aside className={`${collapsed ? 'w-14' : 'w-52 lg:w-60'} bg-white border-r border-gray-200 flex flex-col fixed h-full z-20 transition-all duration-200`}>
+        {/* Header */}
+        <div className={`border-b border-gray-200 flex items-center ${collapsed ? 'justify-center p-3' : 'justify-between p-4'}`}>
+          {!collapsed && (
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-blue-700 truncate">PHS Mini CRM</h1>
+              {user?.full_name && <p className="text-xs font-medium text-gray-800 truncate mt-0.5">{user.full_name}</p>}
+              <p className="text-[11px] text-gray-500 truncate">
+                <span className="uppercase font-semibold text-blue-600">{user?.role}</span>
+              </p>
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(v => !v)}
+            className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            title={collapsed ? 'Mở rộng' : 'Thu gọn'}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+
+        {/* Nav links */}
+        <nav className={`flex-1 py-3 space-y-0.5 ${collapsed ? 'px-1.5' : 'px-3'} overflow-y-auto`}>
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              title={collapsed ? item.label : undefined}
+              className={`flex items-center rounded-lg text-sm font-medium transition-colors ${
+                collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+              } ${
                 isActive(item.path)
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               {item.icon}
-              {item.label}
+              {!collapsed && item.label}
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-200">
+
+        {/* Sign out */}
+        <div className={`border-t border-gray-200 ${collapsed ? 'p-1.5' : 'p-3'}`}>
           <button
             onClick={signOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors"
+            title={collapsed ? 'Đăng xuất' : undefined}
+            className={`flex items-center rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors ${
+              collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+            }`}
           >
             <LogOut size={18} />
-            Đăng xuất
+            {!collapsed && 'Đăng xuất'}
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-52 lg:ml-60 xl:ml-64 p-4 lg:p-6 min-w-0">
+      <main className={`flex-1 ${collapsed ? 'ml-14' : 'ml-52 lg:ml-60'} p-4 lg:p-6 min-w-0 transition-all duration-200`}>
         <Outlet />
       </main>
     </div>
@@ -61,7 +85,7 @@ export default function Layout() {
 function getNavItems(role: string) {
   const items = []
 
-  if (role === 'sa' || role === 'admin') {
+  if (role === 'sa' || role === 'sup' || role === 'admin') {
     items.push({
       path: '/sa',
       label: 'Sale System',
@@ -69,7 +93,7 @@ function getNavItems(role: string) {
     })
   }
 
-  if (role === 'sa') {
+  if (role === 'sa' || role === 'sup') {
     items.push({
       path: '/kpi',
       label: 'KPI cá nhân',

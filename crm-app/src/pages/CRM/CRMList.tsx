@@ -247,7 +247,7 @@ export default function CRMList() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {paginated.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={t.id} onClick={() => { setEditTicket(t); setShowModal(true) }} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-4 py-3 font-mono font-medium text-blue-700">{t.ticket_code}</td>
                     <td className="px-4 py-3 text-gray-700">{t.account_id || <span className="text-gray-400 italic">N/A</span>}</td>
                     <td className="px-4 py-3">{t.customers?.vip_tier ? <VipBadge tier={t.customers.vip_tier} /> : '—'}</td>
@@ -265,7 +265,7 @@ export default function CRMList() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => { setEditTicket(t); setShowModal(true) }}
+                        onClick={(e) => { e.stopPropagation(); setEditTicket(t); setShowModal(true) }}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
                         Xem

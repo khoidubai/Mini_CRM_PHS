@@ -402,6 +402,7 @@ export default function SAList() {
                 <col className="w-28" />     {/* Kết quả */}
                 <col className="w-44" />     {/* Mức quan tâm */}
                 <col className="w-28" />     {/* Bàn giao RM */}
+                <col className="w-32" />     {/* Phí & Giá trị GD */}
                 <col className="w-16" />     {/* Thao tác */}
               </colgroup>
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -419,6 +420,7 @@ export default function SAList() {
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Kết quả</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Mức quan tâm</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Bàn giao RM</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Phí &amp; Giá trị GD</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Thao tác</th>
                 </tr>
               </thead>
@@ -426,7 +428,8 @@ export default function SAList() {
                 {paginated.map((r) => (
                   <tr
                     key={r.id}
-                    className={`hover:bg-gray-50 transition-colors ${
+                    onClick={() => { setEditRecord(r); setShowModal(true) }}
+                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                       (r.customer_group?.startsWith('A') || r.customer_group?.startsWith('B')) ? 'bg-red-50/50' :
                       (user?.role === 'sa' && !isOwnRecord(r)) ? 'bg-blue-50/40' : ''
                     }`}
@@ -452,8 +455,26 @@ export default function SAList() {
                       ) : '—'}
                     </td>
                     <td className="px-4 py-3">
+                      <div className="flex flex-col gap-0.5">
+                        {r.transaction_fee != null ? (
+                          <span className="text-xs font-medium text-emerald-700">
+                            {r.transaction_fee >= 1e6
+                              ? (r.transaction_fee / 1e6).toFixed(2) + 'M'
+                              : r.transaction_fee.toLocaleString('vi-VN')} ₫
+                          </span>
+                        ) : <span className="text-xs text-gray-300">Phí: —</span>}
+                        {r.total_transaction_value != null ? (
+                          <span className="text-[11px] text-gray-500">
+                            {r.total_transaction_value >= 1e6
+                              ? (r.total_transaction_value / 1e6).toFixed(1) + 'M'
+                              : r.total_transaction_value.toLocaleString('vi-VN')} ₫
+                          </span>
+                        ) : <span className="text-[11px] text-gray-300">GT: —</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
                       <button
-                        onClick={() => { setEditRecord(r); setShowModal(true) }}
+                        onClick={(e) => { e.stopPropagation(); setEditRecord(r); setShowModal(true) }}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
                         Sửa
@@ -463,7 +484,7 @@ export default function SAList() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={11} className="px-4 py-12 text-center text-gray-400">
                       Không có dữ liệu
                     </td>
                   </tr>

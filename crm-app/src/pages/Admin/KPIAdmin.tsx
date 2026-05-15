@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { UserProfile } from '../../lib/supabase'
 import type { SARecord, KPITarget, KPIMetric, RecordSnapshot } from '../../types'
-import { ChevronLeft, ChevronRight, ChevronDown, Save, Trophy, Medal, BarChart2, Phone, RefreshCw, DollarSign, TrendingUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Save, Trophy, Medal, BarChart2, Phone, RefreshCw, DollarSign, TrendingUp, X } from 'lucide-react'
 
 type MetricDef = { key: KPIMetric; label: string; unit: string; weight: number; group: string; adminOnly?: boolean; hint: string }
 
@@ -155,6 +155,58 @@ function fmtMoney(n: number): string {
   return String(n)
 }
 
+function fmtVND(n: number | null | undefined) {
+  if (n == null) return '—'
+  return n >= 1e6 ? (n / 1e6).toFixed(2) + 'M ₫' : n.toLocaleString('vi-VN') + ' ₫'
+}
+
+function DrillDownModal({ title, records, onClose }: { title: string; records: SARecord[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="font-bold text-gray-900">{title}</h3>
+            <p className="text-xs text-gray-400 mt-0.5">{records.length} bản ghi</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 sticky top-0 border-b border-gray-100">
+              <tr>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">STT</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">Số TK</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">PIC</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">Ngày gọi</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500">Phí GD</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500">Giá trị GD</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {records.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">Không có dữ liệu</td></tr>
+              )}
+              {records.map((r, i) => (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 text-xs text-gray-400">{i + 1}</td>
+                  <td className="px-4 py-2 font-mono font-medium text-blue-700 text-xs">{r.account_id}</td>
+                  <td className="px-4 py-2 text-xs text-gray-600">{r.pic || '—'}</td>
+                  <td className="px-4 py-2 text-xs text-gray-600">{r.call_date || '—'}</td>
+                  <td className="px-4 py-2 text-right text-xs font-medium text-emerald-600">{fmtVND(r.transaction_fee)}</td>
+                  <td className="px-4 py-2 text-right text-xs text-gray-500">{fmtVND(r.total_transaction_value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function KPIAdmin() {
   const [saUsers, setSaUsers] = useState<UserProfile[]>([])
   const [allRecords, setAllRecords] = useState<SARecord[]>([])
@@ -171,6 +223,7 @@ export default function KPIAdmin() {
   const [actualOverrideEdits, setActualOverrideEdits] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+  const [drillDown, setDrillDown] = useState<{ title: string; records: SARecord[] } | null>(null)
   const [filterBranch, setFilterBranch] = useState<string>('all')
 
   // Report-specific filters
@@ -259,28 +312,32 @@ export default function KPIAdmin() {
       )
       return {
         user: u,
+        recs,
         callCount: recs.length,
         reactivationCount: recs.filter(r => r.reactivation).length,
         feeTotal: recs.reduce((s, r) => s + (r.transaction_fee || 0), 0),
         valueTotal: recs.reduce((s, r) => s + (r.total_transaction_value || 0), 0),
       }
     })
-    const branchMap = new Map<string, { callCount: number; reactivationCount: number; feeTotal: number; valueTotal: number }>()
+    const branchMap = new Map<string, { callCount: number; reactivationCount: number; feeTotal: number; valueTotal: number; recs: SARecord[] }>()
     for (const us of userStats) {
       const br = us.user.branch || 'Chưa phân CN'
-      if (!branchMap.has(br)) branchMap.set(br, { callCount: 0, reactivationCount: 0, feeTotal: 0, valueTotal: 0 })
+      if (!branchMap.has(br)) branchMap.set(br, { callCount: 0, reactivationCount: 0, feeTotal: 0, valueTotal: 0, recs: [] })
       const b = branchMap.get(br)!
       b.callCount += us.callCount
       b.reactivationCount += us.reactivationCount
       b.feeTotal += us.feeTotal
       b.valueTotal += us.valueTotal
+      b.recs.push(...us.recs)
     }
-    const totals = userStats.reduce((acc, us) => ({
-      callCount: acc.callCount + us.callCount,
-      reactivationCount: acc.reactivationCount + us.reactivationCount,
-      feeTotal: acc.feeTotal + us.feeTotal,
-      valueTotal: acc.valueTotal + us.valueTotal,
-    }), { callCount: 0, reactivationCount: 0, feeTotal: 0, valueTotal: 0 })
+    const allRecs = userStats.flatMap(s => s.recs)
+    const totals = {
+      callCount: allRecs.length,
+      reactivationCount: allRecs.filter(r => r.reactivation).length,
+      feeTotal: allRecs.reduce((s, r) => s + (r.transaction_fee || 0), 0),
+      valueTotal: allRecs.reduce((s, r) => s + (r.total_transaction_value || 0), 0),
+      recs: allRecs,
+    }
     return {
       totals,
       topByCalls:        [...userStats].sort((a, b) => b.callCount - a.callCount).slice(0, reportTopN),
@@ -304,7 +361,7 @@ export default function KPIAdmin() {
       const actual = computeActual(recs, userTargets)
       const metrics = getMetrics(u.kpi_type)
       const score = computeWeightedScore(actual, userTargets, metrics)
-      return { user: u, actual, score, userTargets, metrics }
+      return { user: u, actual, score, userTargets, metrics, recs }
     })
     return mapped.sort((a, b) => rankingSortDir === 'desc' ? b.score - a.score : a.score - b.score)
   }, [saUsers, allRecords, targets, filterBranch, rankingRoleFilter, rankingSortDir])
@@ -520,15 +577,15 @@ export default function KPIAdmin() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Tổng cuộc gọi', value: reportData.totals.callCount, unit: 'KH', icon: <Phone size={18} className="text-blue-500" />, color: 'bg-blue-50 border-blue-100' },
-              { label: 'TK kích hoạt', value: reportData.totals.reactivationCount, unit: 'TK', icon: <RefreshCw size={18} className="text-green-500" />, color: 'bg-green-50 border-green-100' },
-              { label: 'Phí GD', value: fmtMoney(reportData.totals.feeTotal), unit: 'VNĐ', icon: <DollarSign size={18} className="text-amber-500" />, color: 'bg-amber-50 border-amber-100' },
-              { label: 'Giá trị GD', value: fmtMoney(reportData.totals.valueTotal), unit: 'VNĐ', icon: <TrendingUp size={18} className="text-purple-500" />, color: 'bg-purple-50 border-purple-100' },
+              { label: 'Tổng cuộc gọi', value: reportData.totals.callCount, unit: 'KH', icon: <Phone size={18} className="text-blue-500" />, color: 'bg-blue-50 border-blue-100', onClick: undefined as (() => void) | undefined },
+              { label: 'TK kích hoạt', value: reportData.totals.reactivationCount, unit: 'TK', icon: <RefreshCw size={18} className="text-green-500" />, color: 'bg-green-50 border-green-100', onClick: () => setDrillDown({ title: 'TK kích hoạt', records: reportData.totals.recs.filter(r => r.reactivation) }) },
+              { label: 'Phí GD', value: fmtMoney(reportData.totals.feeTotal), unit: 'VNĐ', icon: <DollarSign size={18} className="text-amber-500" />, color: 'bg-amber-50 border-amber-100', onClick: () => setDrillDown({ title: 'Phí GD', records: reportData.totals.recs.filter(r => (r.transaction_fee ?? 0) > 0) }) },
+              { label: 'Giá trị GD', value: fmtMoney(reportData.totals.valueTotal), unit: 'VNĐ', icon: <TrendingUp size={18} className="text-purple-500" />, color: 'bg-purple-50 border-purple-100', onClick: () => setDrillDown({ title: 'Giá trị GD', records: reportData.totals.recs.filter(r => (r.total_transaction_value ?? 0) > 0) }) },
             ].map(card => (
-              <div key={card.label} className={`rounded-2xl border p-4 ${card.color}`}>
+              <div key={card.label} onClick={card.onClick} className={`rounded-2xl border p-4 ${card.color} ${card.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}>
                 <div className="flex items-center gap-2 mb-1">{card.icon}<span className="text-xs text-gray-500">{card.label}</span></div>
                 <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-                <p className="text-xs text-gray-400">{card.unit}</p>
+                <p className="text-xs text-gray-400">{card.unit}{card.onClick && <span className="ml-1 text-gray-300">→ xem chi tiết</span>}</p>
               </div>
             ))}
           </div>
@@ -629,13 +686,13 @@ export default function KPIAdmin() {
               </div>
               <div className="divide-y divide-gray-50">
                 {reportData.topByReactivation.map((us, i) => (
-                  <div key={us.user.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div key={us.user.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer" onClick={() => setDrillDown({ title: `TK kích hoạt — ${us.user.pic_name || us.user.full_name}`, records: us.recs.filter(r => r.reactivation) })}>
                     <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{us.user.pic_name || us.user.full_name}</p>
                       {us.user.branch && <p className="text-[10px] text-gray-400">{us.user.branch}</p>}
                     </div>
-                    <span className="text-sm font-bold text-green-600">{us.reactivationCount}</span>
+                    <span className="text-sm font-bold text-green-600 underline decoration-dotted">{us.reactivationCount}</span>
                   </div>
                 ))}
                 {reportData.topByReactivation.length === 0 && <p className="px-4 py-6 text-center text-xs text-gray-400">Chưa có dữ liệu</p>}
@@ -649,15 +706,15 @@ export default function KPIAdmin() {
               </div>
               <div className="divide-y divide-gray-50">
                 {reportData.topByFee.map((us, i) => (
-                  <div key={us.user.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div key={us.user.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer" onClick={() => setDrillDown({ title: `Phí & GT GD — ${us.user.pic_name || us.user.full_name}`, records: us.recs.filter(r => (r.transaction_fee ?? 0) > 0 || (r.total_transaction_value ?? 0) > 0) })}>
                     <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{us.user.pic_name || us.user.full_name}</p>
                       {us.user.branch && <p className="text-[10px] text-gray-400">{us.user.branch}</p>}
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold text-amber-600">{fmtMoney(us.feeTotal)}</p>
-                      <p className="text-[10px] text-gray-400">{fmtMoney(us.valueTotal)}</p>
+                      <p className="text-xs font-bold text-amber-600 underline decoration-dotted">{fmtMoney(us.feeTotal)}</p>
+                      <p className="text-[10px] text-gray-400 underline decoration-dotted">{fmtMoney(us.valueTotal)}</p>
                     </div>
                   </div>
                 ))}
@@ -694,9 +751,9 @@ export default function KPIAdmin() {
                           <div className="h-1 rounded-full bg-blue-400" style={{ width: `${reportData.totals.callCount > 0 ? Math.round(b.callCount / reportData.totals.callCount * 100) : 0}%` }} />
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-green-600">{b.reactivationCount}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-amber-600">{fmtMoney(b.feeTotal)}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-purple-600">{fmtMoney(b.valueTotal)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-green-600 cursor-pointer hover:underline" onClick={() => setDrillDown({ title: `TK kích hoạt — ${b.branch}`, records: b.recs.filter(r => r.reactivation) })}>{b.reactivationCount}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-amber-600 cursor-pointer hover:underline" onClick={() => setDrillDown({ title: `Phí GD — ${b.branch}`, records: b.recs.filter(r => (r.transaction_fee ?? 0) > 0) })}>{fmtMoney(b.feeTotal)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-purple-600 cursor-pointer hover:underline" onClick={() => setDrillDown({ title: `Giá trị GD — ${b.branch}`, records: b.recs.filter(r => (r.total_transaction_value ?? 0) > 0) })}>{fmtMoney(b.valueTotal)}</td>
                     </tr>
                   ))}
                   {reportData.branchStats.length === 0 && (
@@ -743,7 +800,7 @@ export default function KPIAdmin() {
             }
             const sA = aTw > 0 ? Math.round((aWs/aTw)*100) : null
             const sB = bTw > 0 ? Math.round((bWs/bTw)*100) : null
-            const bMetrics = PART_B_METRICS.filter(m => !m.adminOnly)
+            const bMetrics = PART_B_METRICS
             return (
               <div key={item.user.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {/* User header */}
@@ -786,21 +843,28 @@ export default function KPIAdmin() {
                     const t = item.userTargets.find(t => t.metric === m.key)
                     const rawPct = t && t.target_value > 0 ? Math.round((val / t.target_value) * 100) : null
                     const pct = rawPct !== null ? Math.min(rawPct, 100) : null
-                    const overAchieved = rawPct !== null && rawPct > 100
                     const dispVal = m.unit === 'VNĐ' ? (val >= 1e6 ? (val/1e6).toFixed(1)+'M' : String(val)) : m.unit === '%' ? val+'%' : String(val)
+                    const isDrillable = m.key === 'reactivation_count' || m.key === 'ltv_fee'
                     return (
-                      <div key={m.key} className="px-2 py-2 text-center">
+                      <div
+                        key={m.key}
+                        className={`px-2 py-2 text-center ${isDrillable ? 'cursor-pointer hover:bg-blue-50 transition-colors' : ''}`}
+                        onClick={() => {
+                          if (m.key === 'reactivation_count') setDrillDown({ title: `TK kích hoạt — ${item.user.pic_name || item.user.full_name}`, records: item.recs.filter(r => r.reactivation) })
+                          else if (m.key === 'ltv_fee') setDrillDown({ title: `Phí GD — ${item.user.pic_name || item.user.full_name}`, records: item.recs.filter(r => (r.transaction_fee ?? 0) > 0 || (r.total_transaction_value ?? 0) > 0) })
+                        }}
+                      >
                         <p className="text-[9px] text-gray-400 truncate leading-tight">
                           <span className="text-[8px] text-gray-300">{m.group} </span>{m.label}
                         </p>
-                        <p className="text-sm font-bold text-gray-800 mt-0.5">{dispVal}</p>
+                        <p className={`text-sm font-bold mt-0.5 ${isDrillable ? 'text-blue-700' : 'text-gray-800'}`}>{dispVal}</p>
                         {pct !== null ? (
                           <>
                             <div className="w-full bg-gray-100 rounded-full h-0.5 mt-1">
                               <div className={`h-0.5 rounded-full ${pct >= 100 ? 'bg-green-500' : pct >= 70 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                             </div>
-                            <p className="text-[9px] mt-0.5 font-medium" style={{ color: overAchieved ? '#16a34a' : pct !== null && pct >= 70 ? '#ca8a04' : '#f87171' }}>
-                              {overAchieved ? '✓ Đạt' : `${pct}%`}
+                            <p className="text-[9px] mt-0.5 font-medium" style={{ color: pct !== null && pct >= 100 ? '#16a34a' : pct !== null && pct >= 70 ? '#ca8a04' : '#f87171' }}>
+                              {pct !== null && pct >= 100 ? '✓ Đạt' : `${pct}%`}
                             </p>
                           </>
                         ) : <p className="text-[9px] text-gray-200 mt-1">—</p>}
@@ -930,6 +994,8 @@ export default function KPIAdmin() {
           </div>
         </div>
       )}
+
+      {drillDown && <DrillDownModal title={drillDown.title} records={drillDown.records} onClose={() => setDrillDown(null)} />}
     </div>
   )
 }

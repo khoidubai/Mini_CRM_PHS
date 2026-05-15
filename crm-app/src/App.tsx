@@ -24,7 +24,7 @@ function RootRedirect() {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  const map: Record<string, string> = { sa: '/sa', ccc: '/crm', admin: '/sa' }
+  const map: Record<string, string> = { sa: '/sa', sup: '/sa', ccc: '/crm', admin: '/sa' }
   return <Navigate to={map[user.role] || '/sa'} replace />
 }
 
@@ -36,12 +36,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<RootRedirect />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/sa" element={<ProtectedRoute roles={['sa', 'admin']}><SAList /></ProtectedRoute>} />
+            <Route path="/sa" element={<ProtectedRoute roles={['sa', 'sup', 'admin']}><SAList /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute roles={['ccc', 'admin']}><CRMList /></ProtectedRoute>} />
             <Route path="/customer360" element={<ProtectedRoute roles={['admin']}><Customer360 /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute roles={['admin']}><Dashboard /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>} />
-            <Route path="/kpi" element={<ProtectedRoute roles={['sa', 'admin']}><KPIDashboard /></ProtectedRoute>} />
+            <Route path="/kpi" element={<ProtectedRoute roles={['sa', 'sup', 'admin']}><KPIDashboard /></ProtectedRoute>} />
             <Route path="/kpi-admin" element={<ProtectedRoute roles={['admin']}><KPIAdmin /></ProtectedRoute>} />
             <Route path="/error-report" element={<ProtectedRoute roles={['admin']}><ErrorReport /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
